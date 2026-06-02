@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Racing Simulator HUD Prototype</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a1a1a'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%230096ff'/%3E%3C/svg%3E"
+    />
+    <link rel="preload" href="assets/cockpit-shanghai.png" as="image" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="sim-shell" id="simShell">
+      <div class="track-layer" aria-hidden="true"></div>
+      <canvas class="dynamic-track" id="dynamicTrack" aria-hidden="true"></canvas>
+      <div class="speed-lines" aria-hidden="true"></div>
+      <div class="cockpit-vignette" aria-hidden="true"></div>
+
+      <section class="topbar" aria-label="Simulation status">
+        <div class="session-meta">
+          <span class="status-dot"></span>
+          <span>SHANGHAI GP</span>
+          <strong id="sessionPhase">RACE RUN</strong>
+        </div>
+
+        <div class="mode-switch" role="tablist" aria-label="HUD mode">
+          <button class="mode-btn is-active" type="button" role="tab" aria-selected="true" data-mode="beginner">
+            Beginner HUD
+          </button>
+          <button class="mode-btn" type="button" role="tab" aria-selected="false" data-mode="advanced">
+            Advanced HUD
+          </button>
+        </div>
+
+        <div class="race-clock">
+          <span>SECTOR 2</span>
+          <strong id="raceClock">01:35.210</strong>
+        </div>
+      </section>
+
+      <section class="guide-card" id="guideCard" aria-label="30 second quick guide">
+        <div class="guide-head">
+          <span>30S QUICK START</span>
+          <button class="icon-btn" type="button" id="closeGuide" aria-label="Close guide">×</button>
+        </div>
+        <div class="guide-steps">
+          <span><kbd>W</kbd> 加速</span>
+          <span><kbd>S</kbd> 重刹</span>
+          <span><kbd>A</kbd><kbd>D</kbd> 转向</span>
+          <span><kbd>Shift</kbd><kbd>Ctrl</kbd> 换挡</span>
+        </div>
+        <div class="guide-progress"><span id="guideProgress"></span></div>
+      </section>
+
+      <section class="race-alert" id="raceAlert" aria-live="polite">
+        <span class="alert-pulse"></span>
+        <strong id="alertTitle">TYRE TEMP</strong>
+        <span id="alertText">RR 115°C</span>
+      </section>
+
+      <section class="hud hud-beginner is-visible" id="beginnerHud" aria-label="Beginner HUD">
+        <div class="beginner-grid">
+          <article class="glass-card hero-metric">
+            <span class="metric-label">SPEED</span>
+            <strong class="metric-value metric-speed" id="beginnerSpeed">325</strong>
+            <span class="metric-unit">KM/H</span>
+          </article>
+          <article class="glass-card hero-metric gear-card">
+            <span class="metric-label">GEAR</span>
+            <strong class="metric-value metric-gear" id="beginnerGear">7</strong>
+            <span class="metric-unit">GEAR</span>
+          </article>
+        </div>
+        <div class="status-strip is-ok" id="beginnerStatus">
+          <span class="status-lamp"></span>
+          <strong id="beginnerStatusText">车辆状态：良好 (TYRES OK)</strong>
+        </div>
+      </section>
+
+      <section class="hud hud-advanced" id="advancedHud" aria-label="Advanced HUD">
+        <div class="advanced-shell">
+          <div class="advanced-row advanced-header">
+            <div>
+              <span class="tiny-label">LAP</span>
+              <strong id="lapTime">1:35.210</strong>
+              <em class="delta is-loss" id="deltaTime">(+0.45)</em>
+            </div>
+            <div>
+              <span class="tiny-label">POS</span>
+              <strong id="position">8/20</strong>
+              <span class="splitter"></span>
+              <span class="tiny-label">FUEL</span>
+              <strong id="fuel">15.0L</strong>
+            </div>
+          </div>
+
+          <div class="advanced-row core-metrics">
+            <article class="compact-metric">
+              <span>SPD</span>
+              <strong id="advancedSpeed">325</strong>
+            </article>
+            <article class="compact-metric">
+              <span>GEAR</span>
+              <strong id="advancedGear">7</strong>
+            </article>
+            <article class="compact-metric">
+              <span>RPM</span>
+              <strong id="rpm">11500</strong>
+            </article>
+          </div>
+
+          <div class="advanced-grid">
+            <article class="panel-block tyre-panel">
+              <div class="panel-title">
+                <span>胎温 (TYRES)</span>
+                <strong id="maxTyre">MAX 107°C</strong>
+              </div>
+              <div class="tyre-matrix" id="tyreMatrix">
+                <div class="tyre-cell" data-tyre="FL">
+                  <span>FL</span>
+                  <strong>102°C</strong>
+                </div>
+                <div class="tyre-cell" data-tyre="FR">
+                  <span>FR</span>
+                  <strong>105°C</strong>
+                </div>
+                <div class="tyre-cell" data-tyre="RL">
+                  <span>RL</span>
+                  <strong>98°C</strong>
+                </div>
+                <div class="tyre-cell" data-tyre="RR">
+                  <span>RR</span>
+                  <strong>107°C</strong>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel-block telemetry-panel">
+              <div class="panel-title">
+                <span>底盘 (CHASSIS)</span>
+                <strong>LIVE</strong>
+              </div>
+              <div class="mini-bars">
+                <div class="bar-line">
+                  <span>THROTTLE</span>
+                  <i><b id="throttleBar"></b></i>
+                </div>
+                <div class="bar-line">
+                  <span>BRAKE</span>
+                  <i><b id="brakeBar"></b></i>
+                </div>
+                <div class="bar-line steering-line">
+                  <span>STEER</span>
+                  <i><b id="steerBar"></b></i>
+                </div>
+              </div>
+
+              <div class="setup-stack">
+                <div class="setup-row" data-control-row="diff">
+                  <span>DIFF</span>
+                  <button type="button" class="arrow-btn" data-control="diff" data-dir="-1" aria-label="Decrease diff">‹</button>
+                  <strong id="diffValue">50%</strong>
+                  <button type="button" class="arrow-btn" data-control="diff" data-dir="1" aria-label="Increase diff">›</button>
+                </div>
+                <div class="setup-row" data-control-row="brake">
+                  <span>BRAKE</span>
+                  <button type="button" class="arrow-btn" data-control="brake" data-dir="-1" aria-label="Decrease brake bias">‹</button>
+                  <strong id="brakeValue">56%</strong>
+                  <button type="button" class="arrow-btn" data-control="brake" data-dir="1" aria-label="Increase brake bias">›</button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="shortcut-bar" aria-label="Keyboard and touch controls">
+        <button type="button" class="key-chip" data-keychip="w" aria-label="Throttle"><kbd>W</kbd><span>THROTTLE</span></button>
+        <button type="button" class="key-chip" data-keychip="s" aria-label="Brake"><kbd>S</kbd><span>BRAKE</span></button>
+        <button type="button" class="key-chip" data-keychip="a" aria-label="Turn left"><kbd>A</kbd><span>LEFT</span></button>
+        <button type="button" class="key-chip" data-keychip="d" aria-label="Turn right"><kbd>D</kbd><span>RIGHT</span></button>
+        <button type="button" class="key-chip wide" data-keychip="shift" aria-label="Upshift"><kbd>Shift</kbd><span>UPSHIFT</span></button>
+        <button type="button" class="key-chip wide" data-keychip="control" aria-label="Downshift"><kbd>Ctrl</kbd><span>DOWNSHIFT</span></button>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
